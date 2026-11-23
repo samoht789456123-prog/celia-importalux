@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mon CA — CELIA · Importalux</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:#EDF1F7;
+  color:#1a2a3a;font-size:14px;-webkit-font-smoothing:antialiased}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(135deg,#0F1F2E 0%,#1a5276 60%,#2980B9 100%);
+  color:#fff;padding:20px 20px 16px}
+.hdr-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.avatar{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  font-weight:800;flex-shrink:0;border:2px solid rgba(255,255,255,.3)}
+.hdr-name{font-size:22px;font-weight:800;letter-spacing:.3px}
+.hdr-sub{font-size:12px;opacity:.75;margin-top:3px}
+.update-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 12px;
+  font-size:11px;white-space:nowrap}
+.update-dot{width:7px;height:7px;border-radius:50%;background:#2ECC71;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── SAISONS TABS ── */
+.season-bar{display:flex;gap:0;background:rgba(0,0,0,.2);border-radius:8px;
+  padding:3px;margin-top:10px;width:fit-content}
+.season-tab{padding:5px 14px;border-radius:6px;font-size:11px;font-weight:700;
+  cursor:default;opacity:.55;letter-spacing:.3px;text-transform:uppercase}
+.season-tab.active{background:rgba(255,255,255,.2);opacity:1}
+
+/* ── KPI GRID ── */
+.main{max-width:1200px;margin:0 auto;padding:16px 14px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:540px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.kc{background:#fff;border-radius:14px;padding:14px 16px;
+  box-shadow:0 2px 12px rgba(0,0,0,.08);border-top:4px solid #2E75B6;
+  position:relative;overflow:hidden}
+.kc::after{content:'';position:absolute;right:-10px;top:-10px;
+  width:60px;height:60px;border-radius:50%;background:currentColor;opacity:.04}
+.kc-icon{position:absolute;right:12px;top:12px;font-size:22px;opacity:.12}
+.kc-lbl{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:#7F8C8D;margin-bottom:6px}
+.kc-amt{font-size:18px;font-weight:800;letter-spacing:-.3px;line-height:1.1}
+.kc-sub{font-size:11px;color:#999;margin-top:4px}
+.kc-evol{font-size:13px;font-weight:700;margin-top:6px}
+
+/* ── SECTIONS ── */
+.section-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.4px;
+  color:#6B7E99;margin:16px 0 10px;display:flex;align-items:center;gap:8px}
+.section-lbl::after{content:'';flex:1;height:1px;background:#D5DFE8}
+.card{background:#fff;border-radius:14px;padding:18px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:14px}
+
+/* ── TABLEAU ── */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#1a2a3a;color:#fff;padding:5px 7px;text-align:right;
+  font-size:10px;font-weight:700;white-space:nowrap}
+th.th-left{text-align:left}
+th.th-sort{cursor:pointer;user-select:none}
+th.th-sort:hover{background:#2E4A6A}
+th.th-sort .si{font-size:9px;opacity:.4;margin-left:3px}
+th.th-sort.asc .si::after{content:'▲';opacity:1;color:#7EC8F8}
+th.th-sort.desc .si::after{content:'▼';opacity:1;color:#7EC8F8}
+th.th-sort.asc .si, th.th-sort.desc .si{opacity:1}
+td{padding:5px 7px;border-bottom:1px solid #EAF0F7;text-align:right;vertical-align:middle}
+td.td-code{font-family:monospace;font-size:10.5px;text-align:left;color:#6B7E99}
+td.td-name{text-align:left;font-weight:600;max-width:120px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.td-ville{text-align:left;max-width:90px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;color:#444}
+td.td-proj{font-weight:800;background:#FFFBF0}
+tr.main-row{cursor:pointer}
+tr.main-row:hover td{background:#EDF4FF!important}
+tr.main-row.open td{background:#E8F0FF!important;border-bottom:none}
+tr.detail-row td{background:#F4F8FF!important;padding:0;border-bottom:2px solid #C5D8F5}
+tr.detail-row{display:none}
+.det-cell{padding:0!important;text-align:left!important}
+.det-wrap{display:flex;flex-direction:column;gap:8px;padding:10px 18px}
+.det-section{width:100%}
+.det-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid #dde6f5}
+.det-line{display:flex;gap:10px;padding:3px 0;font-size:11px;border-bottom:1px solid #EAF0F7}
+.det-date{color:#888;white-space:nowrap}
+.det-piece{color:#2E75B6;white-space:nowrap}
+.det-amt{font-weight:700;white-space:nowrap}
+tr.main-row.alt-row td{background:#F8FBFF}
+tr.tf td{background:#1a2a3a;color:#fff;font-weight:700;border:none}
+
+/* ── BARRES ── */
+.pbar-wrap{display:inline-block;width:55px;background:#EAF0F7;
+  border-radius:3px;height:6px;vertical-align:middle;margin-right:5px}
+.pbar-fill{height:6px;border-radius:3px;transition:width .3s}
+.pbar-pct{font-size:11px;color:#888}
+
+/* ── RELANCES ── */
+.rtabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.rtab{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;
+  cursor:pointer;background:#EAF0F7;color:#6B7E99;border:2px solid transparent;
+  display:inline-flex;align-items:center;gap:3px;user-select:none}
+.rtab:hover{background:#D5DFE8}
+.rtab.active{background:#2E75B6;color:#fff;border-color:#2E75B6}
+.rtab.cur{border-color:#E67E22}
+.rtab.cur.active{background:#E67E22;border-color:#E67E22}
+.rtab-bdg{display:inline-flex;min-width:16px;height:16px;border-radius:8px;
+  background:#C0392B;color:#fff;font-size:9px;font-weight:800;
+  align-items:center;justify-content:center;padding:0 3px}
+.rtab-bdg.done{background:#27AE60}
+.rdetail{display:none}
+.rdetail.active{display:block}
+.rrow{display:flex;align-items:center;gap:10px;padding:9px 12px;
+  border-radius:10px;margin-bottom:6px;background:#FFF8F0;
+  border-left:4px solid #E67E22;flex-wrap:wrap}
+.rrow.done{background:#F0FFF4;border-left-color:#27AE60}
+.rrow-name{flex:1;font-weight:700;font-size:13px;min-width:120px}
+.rrow-dates{font-size:11px;color:#888;white-space:nowrap}
+.rrow-ca{font-size:12px;font-weight:700;color:#555;white-space:nowrap}
+.rrow-bdg{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.rrow-bdg.todo{background:#FDEBD0;color:#E67E22}
+.rrow-bdg.done{background:#D5F5E3;color:#27AE60}
+.rempty{text-align:center;color:#bbb;padding:20px;font-size:13px}
+/* ── FOOTER ── */
+.footer{text-align:center;color:#B0B8C4;font-size:11px;padding:16px;
+  border-top:1px solid #DDE4ED;margin-top:4px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="avatar">CF</div>
+    <div style="flex:1">
+      <div class="hdr-name">CELIA FARAUD</div>
+      <div class="hdr-sub">Mon tableau de bord commercial · Importalux</div>
+    </div>
+    <div class="update-badge">
+      <span class="update-dot"></span>
+      Mis à jour<br>23/11/2026 à 18:00
+    </div>
+  </div>
+  <div class="season-bar">
+    <div class="season-tab active">Saison 2026/2027</div>
+    <div class="season-tab">vs Saison 2025/2026</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KPI -->
+  <div class="section-lbl">Vue d'ensemble — Saison 2026/2027</div>
+  <div class="kpi-grid">
+
+    <div class="kc" style="border-color:#2980B9;
+      background:linear-gradient(135deg,#0F1F2E,#2980B9);color:#fff">
+      <span class="kc-icon">✅</span>
+      <div class="kc-lbl" style="color:rgba(255,255,255,.7)">CA Facturé N</div>
+      <div class="kc-amt">6 004 €</div>
+      <div class="kc-sub" style="color:rgba(255,255,255,.6)">4 clients · 4 factures</div>
+    </div>
+
+    <div class="kc" style="border-color:#E67E22">
+      <span class="kc-icon">📋</span>
+      <div class="kc-lbl" style="color:#E67E22">BDC en cours</div>
+      <div class="kc-amt" style="color:#E67E22">8 289 €</div>
+      <div class="kc-sub">5 clients · 5 commandes</div>
+    </div>
+
+    <div class="kc" style="border-color:#9B59B6">
+      <span class="kc-icon">🎯</span>
+      <div class="kc-lbl" style="color:#9B59B6">CA Projeté N</div>
+      <div class="kc-amt" style="color:#9B59B6">14 293 €</div>
+      <div class="kc-sub">Facturé + BDC</div>
+    </div>
+
+    <div class="kc" style="border-color:#95A5A6">
+      <span class="kc-icon">📉</span>
+      <div class="kc-lbl">CA Saison 2025/2026</div>
+      <div class="kc-amt" style="color:#555">18 920 €</div>
+      <div class="kc-sub">Saison précédente</div>
+    </div>
+
+    <div class="kc" style="border-color:#C0392B;grid-column:span 2">
+      <span class="kc-icon">📊</span>
+      <div class="kc-lbl">Évolution projetée</div>
+      <div class="kc-amt" style="color:#C0392B">
+        ▼ 24.5 %
+      </div>
+      <div class="kc-sub">Projeté Saison 2026/2027 vs Facturé Saison 2025/2026</div>
+    </div>
+
+  </div>
+
+  <!-- GRAPHIQUE -->
+  <div class="section-lbl">CA mensuel</div>
+  <div class="card">
+    <canvas id="chartMensuel" height="120"></canvas>
+  </div>
+
+  <!-- TABLEAU CLIENTS -->
+  <div class="section-lbl">Mes clients</div>
+  <div class="card">
+    <div style="margin-bottom:10px;font-size:11px;color:#888">
+      Cliquez sur un en-tête de colonne pour trier &nbsp;·&nbsp;
+      <span style="color:#E67E22">■</span> BDC = commandes en cours non encore facturées
+    </div>
+    <div class="tbl-wrap">
+    <table id="tblClients">
+      <thead><tr>
+        <th class="th-left th-sort" onclick="sortTable('tblClients',0,'str',this)">Code <span class="si">⇅</span></th>
+        <th class="th-left th-sort" onclick="sortTable('tblClients',1,'str',this)">Client <span class="si">⇅</span></th>
+        <th class="th-sort" onclick="sortTable('tblClients',2,'str',this)">Dpt <span class="si">⇅</span></th>
+        <th class="th-left th-sort" onclick="sortTable('tblClients',3,'str',this)">Ville <span class="si">⇅</span></th>
+        <th class="th-sort" onclick="sortTable('tblClients',4,'num',this)">CA Facturé N <span class="si">⇅</span></th>
+        <th class="th-sort" style="color:#E67E22" onclick="sortTable('tblClients',5,'num',this)">BDC en cours <span class="si">⇅</span></th>
+        <th class="th-sort" style="background:#E67E2233" onclick="sortTable('tblClients',6,'num',this)">CA Projeté N <span class="si">⇅</span></th>
+        <th class="th-sort" onclick="sortTable('tblClients',7,'num',this)">Saison 2025/2026 <span class="si">⇅</span></th>
+        <th class="th-sort" onclick="sortTable('tblClients',8,'num',this)">Évolution <span class="si">⇅</span></th>
+        <th class="th-left th-sort" onclick="sortTable('tblClients',9,'num',this)">Part <span class="si">⇅</span></th>
+      </tr></thead>
+      <tbody><tr data-ct="5037" onclick="toggleDetail('5037')" class="main-row"><td data-val="5037" class="td-code">5037</td><td data-val="LE PESCAMOU TABAC PRESSE SOUVENIRS" class="td-name">LE PESCAMOU TABAC PRESSE SOUVENIRS</td><td data-val="64" class="td-code" style="text-align:center">64</td><td data-val="Arette" class="td-ville">Arette</td><td data-val="2446.8">2 447 €</td><td data-val="0" style="color:#ccc">—</td><td data-val="2446.8" style="color:#bbb;font-size:11px">—</td><td data-val="1113.8" style="color:#888">1 114 €</td><td data-val="119.68" style="color:#27AE60;font-weight:700">▲ 119.7 %</td><td data-val="17.12"><div class="pbar-wrap"><div class="pbar-fill" style="width:17.1%;background:#2980B9"></div></div><span class="pbar-pct">17.1%</span></td></tr>
+<tr class="detail-row" id="detail-5037" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#2980B9">Factures Saison 2026/2027</div><div class="det-line"><span class="det-date">05/11/26</span><span class="det-piece">26FA1185</span><span class="det-amt">2 447 €</span></div></div><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">08/01/26</span><span class="det-piece">26FA0008</span><span class="det-amt">382 €</span></div><div class="det-line"><span class="det-date">01/12/25</span><span class="det-piece">25FA1177</span><span class="det-amt">732 €</span></div></div></div></td></tr>
+<tr data-ct="4820" onclick="toggleDetail('4820')" class="main-row  alt-row"><td data-val="4820" class="td-code">4820</td><td data-val="SARL BAMICADO - MAISON DU SOUVENIR" class="td-name">SARL BAMICADO - MAISON DU SOUVENIR</td><td data-val="65" class="td-code" style="text-align:center">65</td><td data-val="Cauterets" class="td-ville">Cauterets</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="1994.9" style="color:#E67E22;font-weight:600">1 995 €<span style="font-weight:400;font-size:11px;opacity:.7"> (1)</span></td><td data-val="1994.9" class="td-proj">1 995 €</td><td data-val="0.0" style="color:#888"><span style=color:#ccc>—</span></td><td data-val="9999.00" style="color:#aaa;font-weight:700">—</td><td data-val="13.96"><div class="pbar-wrap"><div class="pbar-fill" style="width:14.0%;background:#2980B9"></div></div><span class="pbar-pct">14.0%</span></td></tr>
+<tr class="detail-row" id="detail-4820" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#E67E22">BDC en cours (Saison 2026/2027)</div><div class="det-line"><span class="det-date">15/09/26</span><span class="det-piece">26BC7290</span><span class="det-amt">1 995 €</span></div></div></div></td></tr>
+<tr data-ct="7011" onclick="toggleDetail('7011')" class="main-row"><td data-val="7011" class="td-code">7011</td><td data-val="SASU LE ROND POINT" class="td-name">SASU LE ROND POINT</td><td data-val="65" class="td-code" style="text-align:center">65</td><td data-val="Bagnere De Bigorre" class="td-ville">Bagnere De Bigorre</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="1915.2" style="color:#E67E22;font-weight:600">1 915 €<span style="font-weight:400;font-size:11px;opacity:.7"> (1)</span></td><td data-val="1915.2" class="td-proj">1 915 €</td><td data-val="0.0" style="color:#888"><span style=color:#ccc>—</span></td><td data-val="9999.00" style="color:#aaa;font-weight:700">—</td><td data-val="13.40"><div class="pbar-wrap"><div class="pbar-fill" style="width:13.4%;background:#2980B9"></div></div><span class="pbar-pct">13.4%</span></td></tr>
+<tr class="detail-row" id="detail-7011" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#E67E22">BDC en cours (Saison 2026/2027)</div><div class="det-line"><span class="det-date">07/09/26</span><span class="det-piece">26BC7263</span><span class="det-amt">1 915 €</span></div></div></div></td></tr>
+<tr data-ct="7013" onclick="toggleDetail('7013')" class="main-row  alt-row"><td data-val="7013" class="td-code">7013</td><td data-val="EIRL LAILHACAR - TABAC LE CINTO" class="td-name">EIRL LAILHACAR - TABAC LE CINTO</td><td data-val="64" class="td-code" style="text-align:center">64</td><td data-val="Gourette" class="td-ville">Gourette</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="1889.5" style="color:#E67E22;font-weight:600">1 890 €<span style="font-weight:400;font-size:11px;opacity:.7"> (1)</span></td><td data-val="1889.5" class="td-proj">1 890 €</td><td data-val="0.0" style="color:#888"><span style=color:#ccc>—</span></td><td data-val="9999.00" style="color:#aaa;font-weight:700">—</td><td data-val="13.22"><div class="pbar-wrap"><div class="pbar-fill" style="width:13.2%;background:#2980B9"></div></div><span class="pbar-pct">13.2%</span></td></tr>
+<tr class="detail-row" id="detail-7013" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#E67E22">BDC en cours (Saison 2026/2027)</div><div class="det-line"><span class="det-date">15/09/26</span><span class="det-piece">26BC7291</span><span class="det-amt">1 890 €</span></div></div></div></td></tr>
+<tr data-ct="4840" onclick="toggleDetail('4840')" class="main-row"><td data-val="4840" class="td-code">4840</td><td data-val="LES MYRTILLES" class="td-name">LES MYRTILLES</td><td data-val="64" class="td-code" style="text-align:center">64</td><td data-val="Laruns" class="td-ville">Laruns</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="1820.8" style="color:#E67E22;font-weight:600">1 821 €<span style="font-weight:400;font-size:11px;opacity:.7"> (1)</span></td><td data-val="1820.8" class="td-proj">1 821 €</td><td data-val="0.0" style="color:#888"><span style=color:#ccc>—</span></td><td data-val="9999.00" style="color:#aaa;font-weight:700">—</td><td data-val="12.74"><div class="pbar-wrap"><div class="pbar-fill" style="width:12.7%;background:#2980B9"></div></div><span class="pbar-pct">12.7%</span></td></tr>
+<tr class="detail-row" id="detail-4840" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#E67E22">BDC en cours (Saison 2026/2027)</div><div class="det-line"><span class="det-date">29/09/26</span><span class="det-piece">26BC7377</span><span class="det-amt">1 821 €</span></div></div></div></td></tr>
+<tr data-ct="7023" onclick="toggleDetail('7023')" class="main-row  alt-row"><td data-val="7023" class="td-code">7023</td><td data-val="BALLET CLASS MORLAAS" class="td-name">BALLET CLASS MORLAAS</td><td data-val="64" class="td-code" style="text-align:center">64</td><td data-val="Morlaas" class="td-ville">Morlaas</td><td data-val="1650.0">1 650 €</td><td data-val="0" style="color:#ccc">—</td><td data-val="1650.0" style="color:#bbb;font-size:11px">—</td><td data-val="0.0" style="color:#888"><span style=color:#ccc>—</span></td><td data-val="9999.00" style="color:#aaa;font-weight:700">—</td><td data-val="11.54"><div class="pbar-wrap"><div class="pbar-fill" style="width:11.5%;background:#2980B9"></div></div><span class="pbar-pct">11.5%</span></td></tr>
+<tr class="detail-row" id="detail-7023" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#2980B9">Factures Saison 2026/2027</div><div class="det-line"><span class="det-date">04/11/26</span><span class="det-piece">26FA1178</span><span class="det-amt">1 650 €</span></div></div></div></td></tr>
+<tr data-ct="7012" onclick="toggleDetail('7012')" class="main-row"><td data-val="7012" class="td-code">7012</td><td data-val="AU PETIT PELERIN" class="td-name">AU PETIT PELERIN</td><td data-val="31" class="td-code" style="text-align:center">31</td><td data-val="Saint Bertrand De Comminges" class="td-ville">Saint Bertrand De Comminges</td><td data-val="1380.2">1 380 €</td><td data-val="0" style="color:#ccc">—</td><td data-val="1380.2" style="color:#bbb;font-size:11px">—</td><td data-val="0.0" style="color:#888"><span style=color:#ccc>—</span></td><td data-val="9999.00" style="color:#aaa;font-weight:700">—</td><td data-val="9.66"><div class="pbar-wrap"><div class="pbar-fill" style="width:9.7%;background:#2980B9"></div></div><span class="pbar-pct">9.7%</span></td></tr>
+<tr class="detail-row" id="detail-7012" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#2980B9">Factures Saison 2026/2027</div><div class="det-line"><span class="det-date">14/09/26</span><span class="det-piece">26FA1063</span><span class="det-amt">1 380 €</span></div></div></div></td></tr>
+<tr data-ct="4900" onclick="toggleDetail('4900')" class="main-row  alt-row"><td data-val="4900" class="td-code">4900</td><td data-val="L'ECHOPPE DU MONTAGNARD" class="td-name">L'ECHOPPE DU MONTAGNARD</td><td data-val="09" class="td-code" style="text-align:center">09</td><td data-val="Guzet" class="td-ville">Guzet</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="669.0" style="color:#E67E22;font-weight:600">669 €<span style="font-weight:400;font-size:11px;opacity:.7"> (1)</span></td><td data-val="669.0" class="td-proj">669 €</td><td data-val="1135.0" style="color:#888">1 135 €</td><td data-val="-41.06" style="color:#C0392B;font-weight:700">▼ 41.1 %</td><td data-val="4.68"><div class="pbar-wrap"><div class="pbar-fill" style="width:4.7%;background:#2980B9"></div></div><span class="pbar-pct">4.7%</span></td></tr>
+<tr class="detail-row" id="detail-4900" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#E67E22">BDC en cours (Saison 2026/2027)</div><div class="det-line"><span class="det-date">01/10/26</span><span class="det-piece">26BC7387</span><span class="det-amt">669 €</span></div></div><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">16/01/26</span><span class="det-piece">26FA0067</span><span class="det-amt">1 135 €</span></div></div></div></td></tr>
+<tr data-ct="7015" onclick="toggleDetail('7015')" class="main-row"><td data-val="7015" class="td-code">7015</td><td data-val="CHALET DES PINS" class="td-name">CHALET DES PINS</td><td data-val="66" class="td-code" style="text-align:center">66</td><td data-val="Bolquere" class="td-ville">Bolquere</td><td data-val="527.0">527 €</td><td data-val="0" style="color:#ccc">—</td><td data-val="527.0" style="color:#bbb;font-size:11px">—</td><td data-val="0.0" style="color:#888"><span style=color:#ccc>—</span></td><td data-val="9999.00" style="color:#aaa;font-weight:700">—</td><td data-val="3.69"><div class="pbar-wrap"><div class="pbar-fill" style="width:3.7%;background:#2980B9"></div></div><span class="pbar-pct">3.7%</span></td></tr>
+<tr class="detail-row" id="detail-7015" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#2980B9">Factures Saison 2026/2027</div><div class="det-line"><span class="det-date">01/10/26</span><span class="det-piece">26FA1104</span><span class="det-amt">527 €</span></div></div></div></td></tr>
+<tr data-ct="4811" onclick="toggleDetail('4811')" class="main-row  alt-row"><td data-val="4811" class="td-code">4811</td><td data-val="SARL SANDMO - LA MARMOTTE" class="td-name">SARL SANDMO - LA MARMOTTE</td><td data-val="65" class="td-code" style="text-align:center">65</td><td data-val="St Lary Soulan" class="td-ville">St Lary Soulan</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="0" style="color:#ccc">—</td><td data-val="0.0" style="color:#bbb;font-size:11px">—</td><td data-val="2205.6" style="color:#888">2 206 €</td><td data-val="-100.00" style="color:#C0392B;font-weight:700">▼ 100.0 %</td><td data-val="0.00"><div class="pbar-wrap"><div class="pbar-fill" style="width:0.0%;background:#2980B9"></div></div><span class="pbar-pct">0.0%</span></td></tr>
+<tr class="detail-row" id="detail-4811" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">04/06/26</span><span class="det-piece">26FA0676</span><span class="det-amt">1 406 €</span></div><div class="det-line"><span class="det-date">01/12/25</span><span class="det-piece">25FA1212</span><span class="det-amt">800 €</span></div></div></div></td></tr>
+<tr data-ct="4834" onclick="toggleDetail('4834')" class="main-row"><td data-val="4834" class="td-code">4834</td><td data-val="SARL DUVERT FOUCHER - UN COIN DE PARADIS" class="td-name">SARL DUVERT FOUCHER - UN COIN DE PARADIS</td><td data-val="09" class="td-code" style="text-align:center">09</td><td data-val="Ax Les Thermes" class="td-ville">Ax Les Thermes</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="0" style="color:#ccc">—</td><td data-val="0.0" style="color:#bbb;font-size:11px">—</td><td data-val="1552.8" style="color:#888">1 553 €</td><td data-val="-100.00" style="color:#C0392B;font-weight:700">▼ 100.0 %</td><td data-val="0.00"><div class="pbar-wrap"><div class="pbar-fill" style="width:0.0%;background:#2980B9"></div></div><span class="pbar-pct">0.0%</span></td></tr>
+<tr class="detail-row" id="detail-4834" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">01/05/26</span><span class="det-piece">26FA0385</span><span class="det-amt">822 €</span></div><div class="det-line"><span class="det-date">08/09/25</span><span class="det-piece">25FA0984</span><span class="det-amt">731 €</span></div></div></div></td></tr>
+<tr data-ct="4841" onclick="toggleDetail('4841')" class="main-row  alt-row"><td data-val="4841" class="td-code">4841</td><td data-val="STE GENEVIEVE" class="td-name">STE GENEVIEVE</td><td data-val="65" class="td-code" style="text-align:center">65</td><td data-val="Lourdes" class="td-ville">Lourdes</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="0" style="color:#ccc">—</td><td data-val="0.0" style="color:#bbb;font-size:11px">—</td><td data-val="1076.2" style="color:#888">1 076 €</td><td data-val="-100.00" style="color:#C0392B;font-weight:700">▼ 100.0 %</td><td data-val="0.00"><div class="pbar-wrap"><div class="pbar-fill" style="width:0.0%;background:#2980B9"></div></div><span class="pbar-pct">0.0%</span></td></tr>
+<tr class="detail-row" id="detail-4841" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">01/05/26</span><span class="det-piece">26FA0522</span><span class="det-amt">1 076 €</span></div></div></div></td></tr>
+<tr data-ct="4832" onclick="toggleDetail('4832')" class="main-row"><td data-val="4832" class="td-code">4832</td><td data-val="SAS XTREM - ESPRIT MONTAGNE" class="td-name">SAS XTREM - ESPRIT MONTAGNE</td><td data-val="65" class="td-code" style="text-align:center">65</td><td data-val="Loudenvielle" class="td-ville">Loudenvielle</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="0" style="color:#ccc">—</td><td data-val="0.0" style="color:#bbb;font-size:11px">—</td><td data-val="2127.8999999999996" style="color:#888">2 128 €</td><td data-val="-100.00" style="color:#C0392B;font-weight:700">▼ 100.0 %</td><td data-val="0.00"><div class="pbar-wrap"><div class="pbar-fill" style="width:0.0%;background:#2980B9"></div></div><span class="pbar-pct">0.0%</span></td></tr>
+<tr class="detail-row" id="detail-4832" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">14/01/26</span><span class="det-piece">26FA0039</span><span class="det-amt">538 €</span></div><div class="det-line"><span class="det-date">17/09/25</span><span class="det-piece">25FA1000</span><span class="det-amt">1 590 €</span></div></div></div></td></tr>
+<tr data-ct="4830" onclick="toggleDetail('4830')" class="main-row  alt-row"><td data-val="4830" class="td-code">4830</td><td data-val="LE PIOLET" class="td-name">LE PIOLET</td><td data-val="31" class="td-code" style="text-align:center">31</td><td data-val="Bagneres De Luchon" class="td-ville">Bagneres De Luchon</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="0" style="color:#ccc">—</td><td data-val="0.0" style="color:#bbb;font-size:11px">—</td><td data-val="2297.8" style="color:#888">2 298 €</td><td data-val="-100.00" style="color:#C0392B;font-weight:700">▼ 100.0 %</td><td data-val="0.00"><div class="pbar-wrap"><div class="pbar-fill" style="width:0.0%;background:#2980B9"></div></div><span class="pbar-pct">0.0%</span></td></tr>
+<tr class="detail-row" id="detail-4830" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">05/12/25</span><span class="det-piece">25FA1225</span><span class="det-amt">2 298 €</span></div></div></div></td></tr>
+<tr data-ct="4831" onclick="toggleDetail('4831')" class="main-row"><td data-val="4831" class="td-code">4831</td><td data-val="ETS TRESCAZES" class="td-name">ETS TRESCAZES</td><td data-val="09" class="td-code" style="text-align:center">09</td><td data-val="Oust" class="td-ville">Oust</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="0" style="color:#ccc">—</td><td data-val="0.0" style="color:#bbb;font-size:11px">—</td><td data-val="1810.85" style="color:#888">1 811 €</td><td data-val="-100.00" style="color:#C0392B;font-weight:700">▼ 100.0 %</td><td data-val="0.00"><div class="pbar-wrap"><div class="pbar-fill" style="width:0.0%;background:#2980B9"></div></div><span class="pbar-pct">0.0%</span></td></tr>
+<tr class="detail-row" id="detail-4831" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">01/05/26</span><span class="det-piece">26FA0477</span><span class="det-amt">852 €</span></div><div class="det-line"><span class="det-date">24/09/25</span><span class="det-piece">25FA1011</span><span class="det-amt">958 €</span></div></div></div></td></tr>
+<tr data-ct="4833" onclick="toggleDetail('4833')" class="main-row  alt-row"><td data-val="4833" class="td-code">4833</td><td data-val="APE PARQUE ARAN SL" class="td-name">APE PARQUE ARAN SL</td><td data-val="25" class="td-code" style="text-align:center">25</td><td data-val="Bossost" class="td-ville">Bossost</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="0" style="color:#ccc">—</td><td data-val="0.0" style="color:#bbb;font-size:11px">—</td><td data-val="1606.0" style="color:#888">1 606 €</td><td data-val="-100.00" style="color:#C0392B;font-weight:700">▼ 100.0 %</td><td data-val="0.00"><div class="pbar-wrap"><div class="pbar-fill" style="width:0.0%;background:#2980B9"></div></div><span class="pbar-pct">0.0%</span></td></tr>
+<tr class="detail-row" id="detail-4833" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">05/02/26</span><span class="det-piece">26FA0130</span><span class="det-amt">1 606 €</span></div></div></div></td></tr>
+<tr data-ct="4872" onclick="toggleDetail('4872')" class="main-row"><td data-val="4872" class="td-code">4872</td><td data-val="1001 TRESORS - SARL PYRENEES SPORTS" class="td-name">1001 TRESORS - SARL PYRENEES SPORTS</td><td data-val="66" class="td-code" style="text-align:center">66</td><td data-val="Font Romeu" class="td-ville">Font Romeu</td><td data-val="0.0"><span style=color:#ccc>—</span></td><td data-val="0" style="color:#ccc">—</td><td data-val="0.0" style="color:#bbb;font-size:11px">—</td><td data-val="3994.5" style="color:#888">3 994 €</td><td data-val="-100.00" style="color:#C0392B;font-weight:700">▼ 100.0 %</td><td data-val="0.00"><div class="pbar-wrap"><div class="pbar-fill" style="width:0.0%;background:#2980B9"></div></div><span class="pbar-pct">0.0%</span></td></tr>
+<tr class="detail-row" id="detail-4872" style="display:none"><td colspan="10" class="det-cell"><div class="det-wrap"><div class="det-section"><div class="det-title" style="color:#888">Factures Saison 2025/2026</div><div class="det-line"><span class="det-date">11/05/26</span><span class="det-piece">26FA0575</span><span class="det-amt">1 685 €</span></div><div class="det-line"><span class="det-date">14/01/26</span><span class="det-piece">26FA0041</span><span class="det-amt">338 €</span></div><div class="det-line"><span class="det-date">08/10/25</span><span class="det-piece">25FA1042</span><span class="det-amt">1 972 €</span></div></div></div></td></tr>
+</tbody>
+      <tfoot><tr class="tf">
+        <td colspan="4" style="text-align:left">TOTAL</td>
+        <td>6 004 €</td>
+        <td>8 289 €</td>
+        <td>14 293 €</td>
+        <td>18 920 €</td>
+        <td style="color:#F1948A">
+          ▼ 24.5 %</td>
+        <td></td>
+      </tr></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <!-- CALENDRIER RELANCES -->
+  <div class="section-lbl">Calendrier des relances — Saison 2025/2026</div>
+  <div class="card">
+    <div style="font-size:11px;color:#888;margin-bottom:12px">
+      Basé sur les factures de la saison <strong>Saison 2025/2026</strong> (mois de la 1re FA) &nbsp;·&nbsp;
+      <span style="color:#E67E22">■</span> BDC = quand le BC est apparu dans SAGE &nbsp;·&nbsp;
+      <span style="color:#2980B9">■</span> FA = date de facturation &nbsp;·&nbsp;
+      <span style="color:#C0392B">●</span> badge rouge = à contacter &nbsp;·&nbsp;
+      <span style="color:#27AE60">●</span> badge vert = déjà commandé cette saison
+    </div>
+    <div class="rtabs"><div class="rtab" data-idx="1" onclick="showRMois(1)">Sep<span class="rtab-bdg todo">3</span></div>
+<div class="rtab" data-idx="2" onclick="showRMois(2)">Oct<span class="rtab-bdg todo">1</span></div>
+<div class="rtab cur" data-idx="3" onclick="showRMois(3)">Nov</div>
+<div class="rtab" data-idx="4" onclick="showRMois(4)">Déc<span class="rtab-bdg todo">2</span></div>
+<div class="rtab" data-idx="5" onclick="showRMois(5)">Jan<span class="rtab-bdg done">1</span></div>
+<div class="rtab" data-idx="6" onclick="showRMois(6)">Fév<span class="rtab-bdg todo">1</span></div>
+<div class="rtab" data-idx="7" onclick="showRMois(7)">Mar</div>
+<div class="rtab" data-idx="8" onclick="showRMois(8)">Avr</div>
+<div class="rtab" data-idx="9" onclick="showRMois(9)">Mai<span class="rtab-bdg todo">1</span></div>
+<div class="rtab" data-idx="10" onclick="showRMois(10)">Jun</div>
+<div class="rtab" data-idx="11" onclick="showRMois(11)">Jul</div>
+<div class="rtab" data-idx="12" onclick="showRMois(12)">Aoû</div>
+</div>
+    <div class="rdetail" id="rdetail-1"><div class="rrow "><div class="rrow-name">SAS XTREM - ESPRIT MONTAGNE</div><div class="rrow-dates">1re&nbsp;FA&nbsp;17/09/25</div><div class="rrow-ca">2 128 €</div><span class="rrow-bdg todo">⚡ À contacter</span></div>
+<div class="rrow "><div class="rrow-name">ETS TRESCAZES</div><div class="rrow-dates">1re&nbsp;FA&nbsp;24/09/25</div><div class="rrow-ca">1 811 €</div><span class="rrow-bdg todo">⚡ À contacter</span></div>
+<div class="rrow "><div class="rrow-name">SARL DUVERT FOUCHER - UN COIN DE PARADIS</div><div class="rrow-dates">1re&nbsp;FA&nbsp;08/09/25</div><div class="rrow-ca">1 553 €</div><span class="rrow-bdg todo">⚡ À contacter</span></div>
+</div>
+<div class="rdetail" id="rdetail-2"><div class="rrow "><div class="rrow-name">1001 TRESORS - SARL PYRENEES SPORTS</div><div class="rrow-dates">1re&nbsp;FA&nbsp;08/10/25</div><div class="rrow-ca">3 994 €</div><span class="rrow-bdg todo">⚡ À contacter</span></div>
+</div>
+<div class="rdetail" id="rdetail-3"></div>
+<div class="rdetail" id="rdetail-4"><div class="rrow "><div class="rrow-name">LE PIOLET</div><div class="rrow-dates">1re&nbsp;FA&nbsp;05/12/25</div><div class="rrow-ca">2 298 €</div><span class="rrow-bdg todo">⚡ À contacter</span></div>
+<div class="rrow "><div class="rrow-name">SARL SANDMO - LA MARMOTTE</div><div class="rrow-dates">1re&nbsp;FA&nbsp;01/12/25</div><div class="rrow-ca">2 206 €</div><span class="rrow-bdg todo">⚡ À contacter</span></div>
+<div class="rrow done"><div class="rrow-name">LE PESCAMOU TABAC PRESSE SOUVENIRS</div><div class="rrow-dates">1re&nbsp;FA&nbsp;01/12/25</div><div class="rrow-ca">1 114 €</div><span class="rrow-bdg done">✓ Commandé</span></div>
+</div>
+<div class="rdetail" id="rdetail-5"><div class="rrow done"><div class="rrow-name">L'ECHOPPE DU MONTAGNARD</div><div class="rrow-dates">1re&nbsp;FA&nbsp;16/01/26</div><div class="rrow-ca">1 135 €</div><span class="rrow-bdg done">✓ Commandé</span></div>
+</div>
+<div class="rdetail" id="rdetail-6"><div class="rrow "><div class="rrow-name">APE PARQUE ARAN SL</div><div class="rrow-dates">1re&nbsp;FA&nbsp;05/02/26</div><div class="rrow-ca">1 606 €</div><span class="rrow-bdg todo">⚡ À contacter</span></div>
+</div>
+<div class="rdetail" id="rdetail-7"></div>
+<div class="rdetail" id="rdetail-8"></div>
+<div class="rdetail" id="rdetail-9"><div class="rrow "><div class="rrow-name">STE GENEVIEVE</div><div class="rrow-dates">1re&nbsp;FA&nbsp;01/05/26</div><div class="rrow-ca">1 076 €</div><span class="rrow-bdg todo">⚡ À contacter</span></div>
+</div>
+<div class="rdetail" id="rdetail-10"></div>
+<div class="rdetail" id="rdetail-11"></div>
+<div class="rdetail" id="rdetail-12"></div>
+
+    <div class="rempty" id="rempty" style="display:none">
+      Aucun client n'a commandé sur cette période la saison dernière.
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <strong>Importalux</strong> &nbsp;·&nbsp;
+  CA HT hors frais de port &nbsp;·&nbsp;
+  Avoirs exclus &nbsp;·&nbsp;
+  Généré le 23/11/2026 à 18:00
+</div>
+
+<script>
+// ── Graphique mensuel ──
+new Chart(document.getElementById('chartMensuel'),{
+  type:'bar',
+  data:{
+    labels:["Sep", "Oct", "Nov", "D\u00e9c", "Jan", "F\u00e9v", "Mar", "Avr", "Mai", "Jun", "Jul", "Ao\u00fb"],
+    datasets:[
+      {label:'BDC en cours',
+        data:[7620.4, 669.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        backgroundColor:'#E67E22CC',borderRadius:5,stack:'N'},
+      {label:'Facturé Saison 2026/2027',
+        data:[1380.2, 527.0, 4096.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        backgroundColor:'#2980B9CC',borderRadius:5,stack:'N'},
+      {label:'Facturé Saison 2025/2026',
+        data:[3279.05, 1971.5, 0.0, 3829.4, 2393.5, 1606.0, 0.0, 0.0, 4435.0, 1406.0, 0.0, 0.0],
+        backgroundColor:'#95A5A655',borderColor:'#95A5A6',
+        borderWidth:1,borderRadius:5,stack:'N1'}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{position:'bottom',labels:{font:{size:12},padding:16,usePointStyle:true}},
+      tooltip:{callbacks:{
+        label:c=>' '+c.dataset.label+' : '+
+          new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',
+            maximumFractionDigits:0}).format(c.parsed.y),
+        footer:items=>'Total : '+
+          new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',
+            maximumFractionDigits:0}).format(items.reduce((s,i)=>s+i.parsed.y,0))
+      }}
+    },
+    scales:{
+      x:{stacked:true,grid:{display:false},ticks:{font:{size:12}}},
+      y:{stacked:true,grid:{color:'#EAF0F7'},
+        ticks:{font:{size:12},callback:v=>
+          new Intl.NumberFormat('fr-FR',{notation:'compact',
+            maximumFractionDigits:0}).format(v)+' €'
+        }
+      }
+    }
+  }
+});
+
+// ── Calendrier relances ──
+function showRMois(idx) {
+  document.querySelectorAll('.rdetail').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  var d = document.getElementById('rdetail-' + idx);
+  var t = document.querySelector('.rtab[data-idx="' + idx + '"]');
+  var emp = document.getElementById('rempty');
+  if (d) {
+    var hasRows = d.querySelector('.rrow');
+    if (hasRows) { d.classList.add('active'); if (emp) emp.style.display='none'; }
+    else { if (emp) emp.style.display=''; }
+  }
+  if (t) t.classList.add('active');
+}
+showRMois(3);
+
+// ── Détail client cliquable ──
+function toggleDetail(ct) {
+  var det = document.getElementById('detail-' + ct);
+  var row = document.querySelector('tr[data-ct="' + ct + '"]');
+  if (!det) return;
+  var open = det.style.display === 'table-row';
+  det.style.display = open ? 'none' : 'table-row';
+  if (row) row.classList.toggle('open', !open);
+}
+
+// ── Tri tableau (paires main-row + detail-row) ──
+function sortTable(tableId, colIdx, type, thEl) {
+  var tbl   = document.getElementById(tableId);
+  var tbody = tbl.querySelector('tbody');
+  var mainRows = Array.from(tbody.querySelectorAll('tr.main-row'));
+  var asc   = !thEl.classList.contains('asc');
+  tbl.querySelectorAll('th.th-sort').forEach(h => h.classList.remove('asc','desc'));
+  thEl.classList.add(asc ? 'asc' : 'desc');
+  mainRows.sort((a,b) => {
+    var va = a.cells[colIdx].dataset.val ?? a.cells[colIdx].innerText.trim();
+    var vb = b.cells[colIdx].dataset.val ?? b.cells[colIdx].innerText.trim();
+    if (type==='num') {
+      return asc ? (parseFloat(va)||0) - (parseFloat(vb)||0)
+                 : (parseFloat(vb)||0) - (parseFloat(va)||0);
+    }
+    return asc ? va.localeCompare(vb,'fr') : vb.localeCompare(va,'fr');
+  });
+  mainRows.forEach(function(r, i) {
+    r.classList.toggle('alt-row', i % 2 === 1);
+    tbody.appendChild(r);
+    var ct  = r.dataset.ct;
+    var det = document.getElementById('detail-' + ct);
+    if (det) tbody.appendChild(det);
+  });
+}
+</script>
+</body>
+</html>
